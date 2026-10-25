@@ -1,0 +1,1292 @@
+<!DOCTYPE html> 
+<html lang="vi" class="scroll-smooth"> 
+<head>     
+    <meta charset="UTF-8">     
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">     
+    <title>Nét phố - Khám phá Đường Điện Biên Phủ qua những lát cắt Sài Gòn</title>     
+    <!-- Tailwind CSS CDN -->     
+    <script src="https://cdn.tailwindcss.com"></script>     
+    <!-- Google Fonts -->     
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">     
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>         
+        tailwind.config = {             
+            theme: {                 
+                extend: {                     
+                    fontFamily: {                         
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],                         
+                        serif: ['"Playfair Display"', 'serif'],                     
+                    },                     
+                    colors: {                         
+                        saigon: {                             
+                            50: '#fdfbf7',                             
+                            100: '#f7f2e6',                             
+                            200: '#ede2cc',                             
+                            700: '#8c5830',                             
+                            800: '#6b4322',                             
+                            900: '#4a2e16',                         
+                        }                     
+                    }                 
+                }             
+            }         
+        }     
+    </script>     
+    <style>         
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }         
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }         
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c5a880; border-radius: 4px; }     
+        
+        /* Popup bản đồ */
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 4px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); }
+        .leaflet-popup-content { margin: 8px 12px; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .custom-map-popup img { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-top: 6px; }
+    </style> 
+</head> 
+<body class="bg-saigon-50 text-gray-800 font-sans antialiased selection:bg-saigon-700 selection:text-white">      
+    <!-- NAVIGATION BAR -->     
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-saigon-200 shadow-sm">         
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">             
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('home')">                 
+                <img src="https://scontent.fsgn5-22.fna.fbcdn.net/v/t1.15752-9/858261834_1448728107199318_1438284075800102383_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=104&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=0024fc&_nc_eui2=AeH4Vz_rkZvzIfFBiTVfpA7fmx3y88FBak-bHfLzwUFqT5GzhshVtu2OmWkPYKDkRsFRmHDurWvBdjPVwWQQ5zm4&_nc_ohc=iDEM0aVfQdYQ7kNvwGoazNt&_nc_oc=AdoPAburU1Zk0L9c53vcWeCmOJ6fl0OpDrL64mrT58DFQmOl1Q6XiE9QGsu_OuiXGpI&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fsgn5-22.fna&_nc_ss=7a22e&oh=03_Q7cD6gFtuCR7ImHTdQd6tY6anvavl6JGzwTZR4o8F1fgX0lT-g&oe=6B044293" alt="Nét phố Logo" class="w-10 h-10 rounded-lg object-cover shadow-md">                 
+                <div>                     
+                    <span class="text-2xl font-serif font-bold text-saigon-900 tracking-wide">Nét phố</span>                     
+                    <span class="block text-xs text-saigon-700 font-medium" data-i18n="nav_sub">Sài Gòn - Tuyến đường Điện Biên Phủ</span>                 
+                </div>             
+            </div>              
+            <nav class="hidden md:flex items-center space-x-8">                 
+                <button onclick="switchTab('home')" id="nav-home" class="nav-btn font-semibold text-saigon-800 border-b-2 border-saigon-800 pb-1 transition-all" data-i18n="nav_home">                     
+                    Trang chủ                 
+                </button>                 
+                <button onclick="switchTab('detail')" id="nav-detail" class="nav-btn font-medium text-gray-600 hover:text-saigon-800 pb-1 transition-all" data-i18n="nav_detail">                     
+                    Chi tiết & Bản đồ                 
+                </button>             
+            </nav>              
+            <div class="flex items-center space-x-4">                 
+                <div onclick="toggleGlobalLanguage()" class="flex items-center bg-saigon-100 border border-saigon-200 p-1 rounded-full cursor-pointer shadow-inner transition select-none w-24 h-10 relative">                     
+                    <div id="lang-slider" class="absolute w-11 h-8 bg-saigon-900 rounded-full shadow-md transition-transform duration-300 transform translate-x-0"></div>                     
+                    <div class="flex justify-between items-center w-full px-2.5 relative z-10 text-xs font-bold">                         
+                        <span id="label-vi" class="text-white transition-colors duration-300">VI</span>                         
+                        <span id="label-en" class="text-gray-700 transition-colors duration-300">EN</span>                     
+                    </div>                 
+                </div>                  
+                <div class="md:hidden flex items-center">                     
+                    <button onclick="toggleMobileMenu()" class="text-saigon-900 focus:outline-none">                         
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">                             
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>                         
+                        </svg>                     
+                    </button>                 
+                </div>             
+            </div>         
+        </div>         
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-saigon-200 px-4 pt-2 pb-4 space-y-2">             
+            <button onclick="switchTab('home'); toggleMobileMenu();" class="block w-full text-left py-2 font-semibold text-saigon-800" data-i18n="nav_home">Trang chủ</button>             
+            <button onclick="switchTab('detail'); toggleMobileMenu();" class="block w-full text-left py-2 font-medium text-gray-600" data-i18n="nav_detail">Chi tiết & Bản đồ</button>         
+        </div>     
+    </header>      
+
+    <main>         
+        <!-- ==================== TRANG CHỦ ==================== -->         
+        <section id="tab-home" class="tab-content">             
+            <div class="relative bg-saigon-900 text-white overflow-hidden py-24 lg:py-32">                 
+                <div class="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay filter sepia contrast-125" style="background-image: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=1600')"></div>                 
+                <div class="absolute inset-0 bg-gradient-to-r from-saigon-900 via-saigon-900/90 to-saigon-900/70"></div>                  
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">                     
+                    <div class="lg:col-span-7 space-y-6">                         
+                        <span class="inline-block px-3 py-1 bg-saigon-700 text-saigon-100 text-xs font-semibold uppercase tracking-wider rounded-full" data-i18n="hero_tag">                             
+                            Một dải Sài Gòn, một lớp lịch sử                         
+                        </span>                         
+                        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold leading-tight" data-i18n="hero_title">                             
+                            Đường Điện Biên Phủ                         
+                        </h1>                         
+                        <p class="text-lg text-saigon-200 font-light leading-relaxed" data-i18n="hero_desc">                             
+                            Khám phá Đường Điện Biên Phủ qua những lát cắt về không gian, kiến trúc và nhịp sống Sài Gòn.                         
+                        </p>                         
+                        <div class="pt-4 flex flex-wrap gap-4">                             
+                            <button onclick="switchTab('detail')" class="px-8 py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl shadow-lg transition transform hover:-translate-y-0.5" data-i18n="hero_btn">                                 
+                                Khám phá bản đồ chi tiết                             
+                            </button>                         
+                        </div>                     
+                    </div>                     
+                    <div class="lg:col-span-5 bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-white/20 shadow-xl">                         
+                        <div class="flex items-center space-x-3 mb-4">                             
+                            <div class="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>                             
+                            <h3 class="text-amber-300 font-semibold uppercase tracking-wider text-xs" data-i18n="central_axis_title">Trục Trung tâm</h3>                         
+                        </div>                         
+                        <p class="font-serif text-lg text-white leading-relaxed" data-i18n="central_axis_desc">                             
+                            Đường Điện Biên Phủ là tâm điểm của hành trình này.                         
+                        </p>                         
+                        <p class="text-sm text-saigon-200 mt-3" data-i18n="central_axis_sub">                             
+                            Kết nối các di tích lịch sử, công trình kiến trúc thời kỳ thuộc địa đến các điểm nhấn nhịp sống đương đại của Thành phố Hồ Chí Minh.                         
+                        </p>                     
+                    </div>                 
+                </div>             
+            </div>              
+
+            <!-- Intro Section -->             
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">                 
+                <div class="text-center max-w-3xl mx-auto mb-12">                     
+                    <h2 class="text-3xl font-serif font-bold text-saigon-900 mb-4" data-i18n="intro_heading">Dạo bước qua đô thị, Đọc Sài Gòn từ Điện Biên Phủ</h2>                 
+                </div>                  
+                <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-saigon-200 max-w-4xl mx-auto relative overflow-hidden">                     
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-bl-full opacity-50 pointer-events-none"></div>                     
+                    <div class="space-y-4">                         
+                        <span class="text-amber-700 font-semibold text-sm tracking-wide uppercase" data-i18n="intro_label">Giới thiệu tổng quan</span>                         
+                        <p class="text-lg text-gray-700 leading-relaxed font-serif" data-i18n="intro_text">                             
+                            Đường Điện Biên Phủ là một trong những trục giao thông chính của Thành phố Hồ Chí Minh, kết nối khu vực trung tâm với cửa ngõ phía đông thành phố.<br><br>Dọc tuyến đường là các khu dân cư, cơ sở giáo dục, dịch vụ và địa điểm văn hóa đa dạng. Hành trình này giới thiệu khái quát không gian đô thị và những điểm dừng tiêu biểu quanh tuyến.
+                        </p>                     
+                    </div>                 
+                </div>             
+            </section>              
+
+            <!-- Highlights -->             
+            <section class="bg-saigon-100 py-16 border-y border-saigon-200">                 
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">                     
+                    <div class="text-center max-w-2xl mx-auto mb-12">                         
+                        <span class="text-saigon-700 font-semibold text-xs tracking-widest uppercase" data-i18n="hl_subtitle">Những lát cắt của đường Điện Biên Phủ</span>                         
+                        <h2 class="text-3xl font-serif font-bold text-saigon-900 mt-2" data-i18n="hl_title">Điểm nhấn của tuyến</h2>                     
+                    </div>                      
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">                         
+                        <div onclick="jumpToSpot('Bưu điện Trung tâm Sài Gòn')" class="bg-white rounded-2xl overflow-hidden shadow-lg border border-saigon-200 hover:shadow-xl transition cursor-pointer flex flex-col group">                             
+                            <div class="h-52 bg-cover bg-center relative" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRo2r9h2OsIfQ56ZXAAawEu2NDyHbk6KkRhrwGYmyS5uQ&s=10')">                                 
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>                                 
+                                <span class="absolute bottom-4 left-4 bg-amber-600 text-white text-xs px-3 py-1 rounded-full font-semibold" data-i18n="hl_arch">Điểm nhấn kiến trúc</span>                             
+                            </div>                             
+                            <div class="p-6 flex-1 flex flex-col justify-between">                                 
+                                <div>                                     
+                                    <h3 class="text-xl font-serif font-bold text-saigon-900 mb-2 group-hover:text-amber-700 transition" data-i18n="hl_post_title">Bưu điện Trung tâm Sài Gòn</h3>                                     
+                                    <p class="text-sm text-gray-600 line-clamp-3" data-i18n="hl_post_desc">                                         
+                                        Bưu điện mang phong cách kiến trúc châu Âu, nổi bật với mái vòm lớn, cửa sổ cao và không gian bên trong rộng. Trên các bức tường vẫn còn những bản đồ cổ của Sài Gòn và Nam Bộ, có giá trị về mặt lịch sử.                                     
+                                    </p>                                 
+                                </div>                                 
+                                <div class="mt-6 flex items-center text-saigon-800 font-semibold text-sm">                                     
+                                    <span data-i18n="view_map_text">Xem chi tiết trên bản đồ</span>                                     
+                                    <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>                                 
+                                </div>                             
+                            </div>                         
+                        </div>                          
+
+                        <div onclick="jumpToSpot('Bảo tàng Chứng tích Chiến tranh')" class="bg-white rounded-2xl overflow-hidden shadow-lg border border-saigon-200 hover:shadow-xl transition cursor-pointer flex flex-col group">                             
+                            <div class="h-52 bg-cover bg-center relative" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXzLT_Xy7_n103RVtEG9ZOMZuplu0UTu3mtmhJ-VSvQZ9a5sZ_oZZI5J3J&s=10')">                                 
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>                                 
+                                <span class="absolute bottom-4 left-4 bg-red-700 text-white text-xs px-3 py-1 rounded-full font-semibold" data-i18n="hl_mem">Điểm nhấn ký ức</span>                             
+                            </div>                             
+                            <div class="p-6 flex-1 flex flex-col justify-between">                                 
+                                <div>                                     
+                                    <h3 class="text-xl font-serif font-bold text-saigon-900 mb-2 group-hover:text-amber-700 transition" data-i18n="hl_war_title">Bảo tàng Chứng tích Chiến tranh</h3>                                     
+                                    <p class="text-sm text-gray-600 line-clamp-3" data-i18n="hl_war_desc">                                         
+                                        Bảo tàng nổi bật với hơn 20.000 tài liệu, hiện vật và hình ảnh về chiến tranh Việt Nam. Đặc biệt, nơi đây trưng bày máy bay, xe tăng, bom, vũ khí và các tư liệu lịch sử.                                     
+                                    </p>                                 
+                                </div>                                 
+                                <div class="mt-6 flex items-center text-saigon-800 font-semibold text-sm">                                     
+                                    <span data-i18n="view_map_text">Xem chi tiết trên bản đồ</span>                                     
+                                    <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>                                 
+                                </div>                             
+                            </div>                         
+                        </div>                          
+
+                        <div onclick="jumpToSpot('Nhà thờ Tân Định')" class="bg-white rounded-2xl overflow-hidden shadow-lg border border-saigon-200 hover:shadow-xl transition cursor-pointer flex flex-col group">                             
+                            <div class="h-52 bg-cover bg-center relative" style="background-image: url('https://statics.vinpearl.com/nha-tho-tan-dinh-0_1629898756.png')">                                 
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>                                 
+                                <span class="absolute bottom-4 left-4 bg-pink-600 text-white text-xs px-3 py-1 rounded-full font-semibold" data-i18n="hl_life">Điểm nhấn nhịp sống</span>                             
+                            </div>                             
+                            <div class="p-6 flex-1 flex flex-col justify-between">                                 
+                                <div>                                     
+                                    <h3 class="text-xl font-serif font-bold text-saigon-900 mb-2 group-hover:text-amber-700 transition" data-i18n="hl_tan_title">Nhà thờ Tân Định</h3>                                     
+                                    <p class="text-sm text-gray-600 line-clamp-3" data-i18n="hl_tan_desc">                                         
+                                        Nhà thờ Tân Định là điểm nhấn nổi bật giữa nhịp sống sôi động của Sài Gòn với kiến trúc màu hồng độc đáo và vẻ đẹp cổ kính.                                     
+                                    </p>                                 
+                                </div>                                 
+                                <div class="mt-6 flex items-center text-saigon-800 font-semibold text-sm">                                     
+                                    <span data-i18n="view_map_text">Xem chi tiết trên bản đồ</span>                                     
+                                    <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>                                 
+                                </div>                             
+                            </div>                         
+                        </div>                     
+                    </div>                 
+                </div>             
+            </section>              
+
+            <!-- Mini Map Preview Trang Chủ -->             
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">                 
+                <div class="flex flex-col md:flex-row items-center justify-between mb-8">                     
+                    <div>                         
+                        <h2 class="text-3xl font-serif font-bold text-saigon-900" data-i18n="mini_map_title">Bản đồ tuyến Điện Biên Phủ</h2>                         
+                        <p class="text-gray-600 mt-1" data-i18n="mini_map_subtitle">Khám phá các cột mốc phân bố dọc theo trục đường lịch sử</p>                     
+                    </div>                     
+                    <button onclick="switchTab('detail')" class="mt-4 md:mt-0 px-6 py-2.5 bg-saigon-800 text-white font-medium rounded-xl hover:bg-saigon-900 transition" data-i18n="mini_map_btn">                         
+                        Mở bản đồ toàn màn hình                     
+                    </button>                 
+                </div>                  
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">                     
+                    <div class="lg:col-span-2 bg-white rounded-3xl p-3 shadow-xl border border-saigon-200">                         
+                        <div id="home-map" class="w-full h-[480px] rounded-2xl border border-saigon-200 z-10"></div>                     
+                    </div>                      
+
+                    <div class="bg-white rounded-3xl p-6 shadow-xl border border-saigon-200 lg:sticky lg:top-28 space-y-4">                         
+                        <div class="flex items-center justify-between pb-3 border-b border-saigon-200">                             
+                            <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider" data-i18n="viewing_label">Đang xem</span>                             
+                            <span id="preview-category" class="px-2.5 py-1 bg-saigon-100 text-saigon-800 rounded-full text-xs font-medium" data-i18n="preview_cat_default">Tổng quan</span>                         
+                        </div>                         
+
+                        <!-- Bảng chọn địa điểm trang chủ -->
+                        <div id="home-location-selector" class="space-y-2 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
+                        </div>
+
+                        <div class="pt-2 border-t border-saigon-100 space-y-3">                             
+                            <h3 id="preview-title" class="text-xl font-serif font-bold text-saigon-900" data-i18n="preview_title_default">Đường Điện Biên Phủ</h3>                             
+                            <p id="preview-address" class="text-xs text-gray-500 flex items-center">                                 
+                                <svg class="w-4 h-4 mr-1.5 text-amber-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>                                 
+                                <span id="preview-addr-text" data-i18n="preview_addr_default">Tuyến đường kết nối từ ngã 6 Lý Thái Tổ đến chân cầu Sài Gòn</span>                             
+                            </p>                             
+                            <p id="preview-desc" class="text-xs text-gray-600 leading-relaxed line-clamp-3" data-i18n="preview_desc_default">                                 
+                                Đường Điện Biên Phủ là một trục giao thông chính của Thành phố Hồ Chí Minh, kết nối khu vực trung tâm với cửa ngõ phía đông. Dọc tuyến có các khu dân cư, trường học, dịch vụ và địa điểm văn hóa; bản đồ giúp khám phá khái quát những điểm dừng tiêu biểu quanh tuyến.                             
+                            </p>                         
+                        </div>                         
+                        <button onclick="switchTab('detail');" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl shadow transition text-center block" data-i18n="preview_detail_btn">                             
+                            Xem trên bản đồ chi tiết                         
+                        </button>                     
+                    </div>                 
+                </div>             
+            </section>         
+        </section>          
+
+        <!-- ==================== TRANG CHI TIẾT & BẢN ĐỒ ==================== -->         
+        <section id="tab-detail" class="tab-content hidden">             
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">                 
+                <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between">                     
+                    <div>                         
+                        <h1 class="text-3xl font-serif font-bold text-saigon-900" data-i18n="detail_page_title">Bản đồ Chi tiết & Dữ liệu Lịch sử</h1>                         
+                        <p class="text-gray-600" data-i18n="detail_page_subtitle">Trục đường Điện Biên Phủ. Chọn địa điểm ở danh sách bên cạnh để xem bản đồ và lịch sử.</p>                     
+                    </div>                     
+                    <div class="mt-4 md:mt-0 flex flex-wrap gap-2">                         
+                        <button onclick="filterLocations('all')" class="filter-btn px-4 py-2 bg-saigon-800 text-white text-xs font-semibold rounded-lg shadow transition" data-i18n="filter_all">Tất cả</button>                         
+                        <button onclick="filterLocations('Di tích lịch sử')" class="filter-btn px-4 py-2 bg-white text-gray-700 border border-saigon-200 text-xs font-semibold rounded-lg shadow-sm hover:bg-saigon-100 transition" data-i18n="filter_history">Di tích lịch sử</button>                         
+                        <button onclick="filterLocations('Khu du lịch')" class="filter-btn px-4 py-2 bg-white text-gray-700 border border-saigon-200 text-xs font-semibold rounded-lg shadow-sm hover:bg-saigon-100 transition" data-i18n="filter_tourism">Khu du lịch</button>                         
+                        <button onclick="filterLocations('Trường học')" class="filter-btn px-4 py-2 bg-white text-gray-700 border border-saigon-200 text-xs font-semibold rounded-lg shadow-sm hover:bg-saigon-100 transition" data-i18n="filter_school">Trường học</button>                         
+                        <button onclick="filterLocations('Quán ăn')" class="filter-btn px-4 py-2 bg-white text-gray-700 border border-saigon-200 text-xs font-semibold rounded-lg shadow-sm hover:bg-saigon-100 transition" data-i18n="filter_food">Quán ăn</button>                     
+                    </div>                 
+                </div>                  
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 relative">                     
+                    <!-- BẢN ĐỒ CHI TIẾT NỀN GOOGLE MAPS -->                     
+                    <div class="lg:col-span-8 bg-white rounded-3xl p-4 shadow-xl border border-saigon-200 relative">                         
+                        <div id="detail-map" class="w-full h-[650px] rounded-2xl overflow-hidden border border-saigon-200 z-10"></div>                         
+                        <div class="absolute bottom-6 left-6 z-20 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow border border-saigon-200 text-xs text-saigon-900 font-medium" data-i18n="map_hint">                             
+                            📍 Nhấp vào địa điểm bên danh sách để cập nhật bản đồ và xem lịch sử chi tiết                         
+                        </div>                     
+                    </div>                      
+
+                    <!-- DANH SÁCH ĐỊA ĐIỂM -->                     
+                    <div class="lg:col-span-4 bg-white rounded-3xl p-6 shadow-xl border border-saigon-200 h-[680px] flex flex-col">                         
+                        <h3 class="text-lg font-serif font-bold text-saigon-900 mb-4 pb-2 border-b border-saigon-200" data-i18n="list_title">Danh sách địa điểm</h3>                         
+                        <div id="location-list" class="overflow-y-auto flex-1 space-y-3 pr-2 custom-scrollbar">                         
+                        </div>                     
+                    </div>                 
+                </div>             
+            </div>         
+        </section>     
+    </main>      
+
+    <!-- DRAWER DETAIL -->     
+    <div id="info-drawer" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex justify-end transition-opacity duration-300">         
+        <div id="drawer-content" class="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300">             
+            <div class="p-6 bg-saigon-900 text-white flex items-center justify-between">                 
+                <div>                     
+                    <span id="drawer-category" class="px-2.5 py-1 bg-amber-600 text-white text-xs font-semibold rounded-full uppercase tracking-wider">Di tích lịch sử</span>                     
+                    <h2 id="drawer-title" class="text-2xl font-serif font-bold mt-2">Tên địa điểm</h2>                 
+                </div>                 
+                <button onclick="closeDrawer()" class="p-2 text-saigon-200 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition">                     
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>                 
+                </button>             
+            </div>             
+            <div id="drawer-body" class="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6 custom-scrollbar">             
+            </div>         
+        </div>     
+    </div>      
+
+    <!-- FOOTER -->     
+    <footer class="bg-saigon-900 text-saigon-200 py-12 border-t border-saigon-800 mt-20">         
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">             
+            <h3 class="text-2xl font-serif font-bold text-white">MT Group.</h3>             
+            <p class="text-amber-300 font-serif italic max-w-xl mx-auto text-lg" data-i18n="footer_quote">                 
+                “Đường Điện Biên Phủ — một hành trình riêng để quan sát Sài Gòn xưa trong nay.”             
+            </p>             
+            <div class="pt-4 text-xs text-saigon-400 border-t border-saigon-800 max-w-md mx-auto" data-i18n="footer_copy">                 
+                © 2026 Nét phố - Dự án Liên môn Tin Học - Nhóm 10A1 - THPT Lê Quý Đôn.             
+            </div>         
+        </div>     
+    </footer>      
+
+    <script>         
+        let currentLang = 'vi';
+        let activeLocationCategory = 'all';
+        let selectedHomeLocation = null;
+        let activeDrawerLocation = null;
+
+        // Đa ngôn ngữ VI - EN
+        const translations = {             
+            vi: {                 
+                nav_sub: "Sài Gòn - Tuyến đường Điện Biên Phủ",                 
+                nav_home: "Trang chủ",                 
+                nav_detail: "Chi tiết & Bản đồ",                 
+                hero_tag: "Một dải Sài Gòn, một lớp lịch sử",                 
+                hero_title: "Đường Điện Biên Phủ",                 
+                hero_desc: "Khám phá Đường Điện Biên Phủ qua những lát cắt về không gian, kiến trúc và nhịp sống Sài Gòn.",                 
+                hero_btn: "Khám phá bản đồ chi tiết",                 
+                central_axis_title: "Trục Trung tâm",                 
+                central_axis_desc: "Đường Điện Biên Phủ là tâm điểm của hành trình này.",                 
+                central_axis_sub: "Kết nối các di tích lịch sử, công trình kiến trúc thời kỳ thuộc địa đến các điểm nhấn nhịp sống đương đại của Thành phố Hồ Chí Minh.",                 
+                intro_heading: "Dạo bước qua đô thị, Đọc Sài Gòn từ Điện Biên Phủ",                 
+                intro_label: "Giới thiệu tổng quan",                 
+                intro_text: "Đường Điện Biên Phủ là một trong những trục giao thông chính của Thành phố Hồ Chí Minh, kết nối khu vực trung tâm với cửa ngõ phía đông thành phố.<br><br>Dọc tuyến đường là các khu dân cư, cơ sở giáo dục, dịch vụ và địa điểm văn hóa đa dạng. Hành trình này giới thiệu khái quát không gian đô thị và những điểm dừng tiêu biểu quanh tuyến.",                 
+                hl_subtitle: "Những lát cắt của đường Điện Biên Phủ",                 
+                hl_title: "Điểm nhấn của tuyến",                 
+                hl_arch: "Điểm nhấn kiến trúc",                 
+                hl_mem: "Điểm nhấn ký ức",                 
+                hl_life: "Điểm nhấn nhịp sống",                 
+                hl_post_title: "Bưu điện Trung tâm Sài Gòn",                 
+                hl_post_desc: "Bưu điện mang phong cách kiến trúc châu Âu, nổi bật với mái vòm lớn, cửa sổ cao và không gian bên trong rộng. Trên các bức tường vẫn còn những bản đồ cổ của Sài Gòn và Nam Bộ, có giá trị về mặt lịch sử.",                 
+                hl_war_title: "Bảo tàng Chứng tích Chiến tranh",                 
+                hl_war_desc: "Bảo tàng nổi bật với hơn 20.000 tài liệu, hiện vật và hình ảnh về chiến tranh Việt Nam. Đặc biệt, nơi đây trưng bày máy bay, xe tăng, bom, vũ khí và các tư liệu lịch sử.",                 
+                hl_tan_title: "Nhà thờ Tân Định",                 
+                hl_tan_desc: "Nhà thờ Tân Định là điểm nhấn nổi bật giữa nhịp sống sôi động của Sài Gòn với kiến trúc màu hồng độc đáo và vẻ đẹp cổ kính.",                 
+                view_map_text: "Xem chi tiết trên bản đồ",                 
+                mini_map_title: "Bản đồ tuyến Điện Biên Phủ",                 
+                mini_map_subtitle: "Khám phá các cột mốc phân bố dọc theo trục đường lịch sử",                 
+                mini_map_btn: "Mở bản đồ toàn màn hình",                 
+                viewing_label: "Đang xem",                 
+                preview_cat_default: "Tổng quan",                 
+                preview_title_default: "Đường Điện Biên Phủ",                 
+                preview_addr_default: "Tuyến đường kết nối từ ngã 6 Lý Thái Tổ đến chân cầu Sài Gòn",                 
+                preview_desc_default: "Đường Điện Biên Phủ là một trục giao thông chính của Thành phố Hồ Chí Minh, kết nối khu vực trung tâm với cửa ngõ phía đông. Dọc tuyến có các khu dân cư, trường học, dịch vụ và địa điểm văn hóa; bản đồ giúp khám phá khái quát những điểm dừng tiêu biểu quanh tuyến.",                 
+                preview_detail_btn: "Xem trên bản đồ chi tiết",                 
+                detail_page_title: "Bản đồ Chi tiết & Dữ liệu Lịch sử",                 
+                detail_page_subtitle: "Trục đường Điện Biên Phủ. Chọn địa điểm ở danh sách bên cạnh để xem bản đồ và lịch sử.",                 
+                filter_all: "Tất cả",                 
+                filter_history: "Di tích lịch sử",                 
+                filter_tourism: "Khu du lịch",                 
+                filter_school: "Trường học",                 
+                filter_food: "Quán ăn",                 
+                map_hint: "📍 Nhấp vào địa điểm bên danh sách để cập nhật bản đồ và xem lịch sử chi tiết",                 
+                list_title: "Danh sách địa điểm",                 
+                drawer_address: "Địa chỉ vị trí",
+                drawer_history: "Lịch sử & Thông tin chi tiết",
+                drawer_directions: "Mở chỉ đường trên Google Maps",
+                footer_quote: "“Đường Điện Biên Phủ — một hành trình riêng để quan sát Sài Gòn xưa trong nay.”",                 
+                footer_copy: "© 2026 Nét phố - Dự án Liên môn Tin Học - Nhóm 10A1 - THPT Lê Quý Đôn."             
+            },             
+            en: {                 
+                nav_sub: "Saigon - Dien Bien Phu Street",                 
+                nav_home: "Home",                 
+                nav_detail: "Details & Map",                 
+                hero_tag: "A Strip of Saigon, a Layer of History",                 
+                hero_title: "Dien Bien Phu Street",                 
+                hero_desc: "Discover Dien Bien Phu Street through slices of space, architecture, and daily life in Saigon.",                 
+                hero_btn: "Explore Detailed Map",                 
+                central_axis_title: "Central Axis",                 
+                central_axis_desc: "Dien Bien Phu Street is the focal point of this journey.",                 
+                central_axis_sub: "Connecting historical relics and colonial architecture to contemporary urban landmarks of Ho Chi Minh City.",                 
+                intro_heading: "Walking through the city, Reading Saigon from Dien Bien Phu",                 
+                intro_label: "Overview Introduction",                 
+                intro_text: "Dien Bien Phu Street is one of Ho Chi Minh City's main thoroughfares, connecting the central area with the city's eastern gateway.<br><br>Residential neighborhoods, schools, services, and cultural destinations line the route. This guide offers a general introduction to the urban landscape and notable stops around the street.",                 
+                hl_subtitle: "Slices of Dien Bien Phu Street",                 
+                hl_title: "Route Highlights",                 
+                hl_arch: "Architectural Highlight",                 
+                hl_mem: "Memory Highlight",                 
+                hl_life: "Lifestyle Highlight",                 
+                hl_post_title: "Saigon Central Post Office",                 
+                hl_post_desc: "European architecture style featuring large domes, high windows, and ancient maps of Saigon on the walls.",                 
+                hl_war_title: "War Remnants Museum",                 
+                hl_war_desc: "Displays over 20,000 documents, artifacts, and photos about the Vietnam War.",                 
+                hl_tan_title: "Tan Dinh Church",                 
+                hl_tan_desc: "Famous for its unique pink color and gothic architectural beauty in the heart of Saigon.",                 
+                view_map_text: "View details on map",                 
+                mini_map_title: "Dien Bien Phu Route Map",                 
+                mini_map_subtitle: "Explore landmarks along the historic boulevard",                 
+                mini_map_btn: "Open Fullscreen Map",                 
+                viewing_label: "Viewing",                 
+                preview_cat_default: "Overview",                 
+                preview_title_default: "Dien Bien Phu Street",                 
+                preview_addr_default: "Connecting Ly Thai To 6-way intersection to Saigon Bridge",                 
+                preview_desc_default: "Dien Bien Phu Street is one of Ho Chi Minh City's main thoroughfares, connecting the central area with the city's eastern gateway. Residential neighborhoods, schools, services, and cultural destinations line the route; this map offers a general introduction to notable stops nearby.",                 
+                preview_detail_btn: "View on Detailed Map",                 
+                detail_page_title: "Detailed Map & Historical Data",                 
+                detail_page_subtitle: "Dien Bien Phu axis. Select a location to view map and history.",                 
+                filter_all: "All",                 
+                filter_history: "Historical Relics",                 
+                filter_tourism: "Tourism Spots",                 
+                filter_school: "Schools",                 
+                filter_food: "Eateries",                 
+                map_hint: "📍 Click on a location from the list to update map and detail history",                 
+                list_title: "Location List",                 
+                drawer_address: "Address",
+                drawer_history: "History & Details",
+                drawer_directions: "Get directions on Google Maps",
+                footer_quote: "“Dien Bien Phu Street — a journey through Saigon’s past and present.”",                 
+                footer_copy: "© 2026 Net Pho - Interdisciplinary Informatics Project - Group 10A1 - Le Quy Don High School."             
+            }         
+        };
+
+        // Các địa điểm trong hành trình và phần thông tin người dùng cung cấp
+        const locationsData = [
+            {
+                id: 1,
+                title: "Khu du lịch Văn Thánh",
+                category: "Khu du lịch",
+                lat: 10.7968,
+                lng: 106.7165,
+                address: "48/10 Điện Biên Phủ, Thạnh Mỹ Tây, Hồ Chí Minh, Việt Nam",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqlD37zKyudfxGVgkg453SGlsMDZxf9ZVPeROiRyrjeg&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT56EsLOJyqxP9o9LdKQadTbulE9R-IORyVQPFHXyYCKg&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành qua các giai đoạn:</strong><br>
+                    <strong>1. Trước năm 1985 – Nguồn gốc tên Văn Thánh:</strong> Tên Văn Thánh gắn với một di tích thờ Chu Công và Khổng Tử được xây dựng vào khoảng năm 1824 dưới thời Tổng trấn Gia Định Thành Lê Văn Duyệt. Về sau, miếu bị hư hỏng nhưng tên Văn Thánh được lưu lại cho khu vực, rạch và cầu gần đó.<br><br>
+                    <strong>2. Năm 1985 – Hình thành khu du lịch:</strong> UBND quận Bình Thạnh thành lập Khu du lịch Văn Thánh nhằm tạo một địa điểm vui chơi, giải trí cho người dân. Ban đầu nơi đây có diện tích khoảng 7,7 ha, gồm hồ nước, bãi cỏ, sân bóng và các khu vui chơi.<br><br>
+                    <strong>3. Giai đoạn 1998 – 2003 – Được đầu tư và cải tạo:</strong> Đến năm 1998, Khu du lịch Văn Thánh được bàn giao cho Công ty Du lịch Gia Định. Sau đó, cảnh quan được cải tạo, các khu vui chơi, ăn uống và dịch vụ du lịch được phát triển thêm.<br><br>
+                    <strong>4. Từ năm 2003 – 2007 – Phát triển trong hệ thống Bình Quới:</strong> Năm 2003, Văn Thánh được sáp nhập vào Làng Du lịch Bình Quới, tiếp tục được đầu tư và hoàn thiện các dịch vụ phục vụ du khách.<br><br>
+                    <strong>5. Từ năm 2007 đến nay – Phát triển thành điểm du lịch sinh thái, ẩm thực:</strong> Văn Thánh ngày càng được đầu tư về cảnh quan và dịch vụ, trở thành một không gian xanh giữa đô thị. Hiện nay khu du lịch có diện tích trên 8 ha (hồ nước khoảng 3,5 ha), thuộc hệ thống Saigontourist Group.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Không gian xanh rộng rãi, hồ nước thoáng mát, nhà hàng, hồ bơi, sân tennis và khu tổ chức sự kiện.<br>
+                    <strong>Thời gian mở cửa:</strong> 7:00 – 21:00, tất cả các ngày trong tuần.<br>
+                    <strong>Giá vé:</strong> Vào cổng miễn phí. Dịch vụ bên trong (hồ bơi khoảng 30.000–70.000đ/người, buffet, thuê chòi...) tính riêng.
+                `
+            },
+            {
+                id: 2,
+                title: "Bảo tàng Chứng tích Chiến tranh",
+                category: "Di tích lịch sử",
+                lat: 10.7789,
+                lng: 106.6921,
+                address: "28 Võ Văn Tần, Phường Võ Thị Sáu, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQf5-0dbKbaBjazO71DQlPErCc2-vy21aH5dOHW_uyxLA&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHcA96kaDZ5cPDs6yo0AeIGqVxsKjE-8271-mnone_rA&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành qua các giai đoạn:</strong><br>
+                    <strong>1. Giai đoạn 1975–1979 – Thành lập:</strong> Ngày 4/9/1975, bảo tàng được thành lập với tên ban đầu là Nhà trưng bày tội ác Mỹ – Ngụy.<br><br>
+                    <strong>2. Giai đoạn 1980–1989 – Mở rộng sưu tầm:</strong> Tiếp tục thu thập hình ảnh, tài liệu, hiện vật và phương tiện quân sự từ các cựu chiến binh, phóng viên và tổ chức.<br><br>
+                    <strong>3. Giai đoạn 1990–1994 – Phát triển hoạt động:</strong> Nội dung trưng bày phong phú hơn, phản ánh hậu quả chiến tranh và những mất mát của con người.<br><br>
+                    <strong>4. Năm 1995 – Đổi tên chính thức:</strong> Ngày 4/7/1995, chính thức mang tên Bảo tàng Chứng tích Chiến tranh, hướng đến giáo dục giá trị hòa bình.<br><br>
+                    <strong>5. Từ năm 2000 đến nay – Hiện đại hóa:</strong> Đổi mới cách trưng bày, mở rộng chuyên đề về chất độc da cam, chế độ lao tù và hậu quả chiến tranh.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Hơn 20.000 tài liệu, hiện vật và hình ảnh về chiến tranh Việt Nam; trưng bày máy bay, xe tăng, bom, vũ khí cùng các chuyên đề về chất độc da cam, chế độ lao tù và hậu quả chiến tranh.<br>
+                    <strong>Thời gian mở cửa:</strong> 7:30 – 17:30 hằng ngày, kể cả ngày lễ. Quầy vé mở cửa đến 17:00.<br>
+                    <strong>Giá vé:</strong> 60.000đ/người từ 16 tuổi trở lên. Học sinh, sinh viên được miễn phí khi đăng ký và xuất trình thẻ hợp lệ.
+                `
+            },
+            {
+                id: 3,
+                title: "Nhà thờ Tân Định",
+                category: "Di tích lịch sử",
+                lat: 10.7884,
+                lng: 106.6908,
+                address: "289 Hai Bà Trưng, Phường Xuân Hòa, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_zcAuV-jdQHqFouK4aP1fs8Oweubj11U2F2CKJufwZQ&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8-Kwd9uMPoTptmcU5Wzw9QUy04Y4P_trEAFlNxcu8pQ&s=10"
+                ],
+                desc: `
+                    <strong>Tên chính thức:</strong> Nhà thờ Thánh Tâm Chúa Giêsu Tân Định, thường gọi là Nhà thờ Tân Định hoặc Nhà thờ màu hồng.<br>
+                    <strong>Lịch sử & Kiến trúc:</strong><br>
+                    - <strong>1874–1876:</strong> Linh mục Donatien Éveillard (1835–1883) thành lập giáo xứ Tân Định và trực tiếp giám sát việc xây dựng. Nhà thờ khánh thành tháng 12/1876 với kinh phí khoảng 15.000 piastres.<br>
+                    - <strong>1877–1880:</strong> Cha Éveillard mời các nữ tu dòng Saint-Paul de Chartres mở cơ sở chăm sóc trẻ mồ côi và trường nội trú; đến khoảng năm 1880, trường có khoảng 300 học sinh.<br>
+                    - <strong>1896–1898:</strong> Nhà thờ được xây dựng lại và mở rộng đáng kể; phần lớn diện mạo hiện nay hình thành từ đợt này.<br>
+                    - <strong>1928–1929:</strong> Bổ sung tháp chuông phía trước, tiền sảnh và các hạng mục mới. Tháp cao khoảng 52,6 m, trên đỉnh có thánh giá đồng cao khoảng 3 m.<br>
+                    - <strong>1949:</strong> Gia cố một số cột ở gian giữa và hành lang.<br>
+                    - <strong>1957:</strong> Sửa chữa và sơn màu hồng phấn đặc trưng.<br><br>
+                    <strong>Đặc điểm nổi bật:</strong> Phong cách Romanesque kết hợp Gothic và Phục hưng; tháp chuông có 5 quả chuông, bên trong có các hàng cột, cửa kính màu và bàn thờ chính bằng đá cẩm thạch Ý. Nhà thờ Công giáo vẫn hoạt động và là công trình có giá trị lịch sử, kiến trúc, tôn giáo và văn hóa của thành phố.
+                `
+            },
+            {
+                id: 4,
+                title: "Bảo tàng Lịch sử Thành phố Hồ Chí Minh",
+                category: "Di tích lịch sử",
+                lat: 10.7885,
+                lng: 106.7032,
+                address: "2 Nguyễn Bỉnh Khiêm, Bến Nghé, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS3x7C7CwrFNWcTs6Z5GAZYiM4odAtLNcMRBBODN4gXmg&s",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgm-0g4zViEAiIDx39icSOLJaSoykhrXak5lSAmtyGxQ&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành:</strong><br>
+                    - <strong>1927–1929:</strong> Xây dựng trong khuôn viên Thảo Cầm Viên Sài Gòn theo thiết kế của kiến trúc sư người Pháp Auguste Delaval, kết hợp kiến trúc phương Tây và yếu tố Á Đông theo phong cách Đông Dương.<br>
+                    - <strong>1/1/1929:</strong> Mở cửa đón khách với tên Blanchard de la Brosse Museum, trưng bày hiện vật khảo cổ, lịch sử và văn hóa Việt Nam cùng một số nước châu Á.<br>
+                    - <strong>Sau năm 1954:</strong> Tiếp tục hoạt động sau Hiệp định Genève; nội dung dần tập trung vào lịch sử Việt Nam và các nền văn hóa Đông Sơn, Óc Eo, Champa cùng các triều đại phong kiến.<br>
+                    - <strong>Sau năm 1975:</strong> Được tiếp quản, tổ chức lại và mang tên Bảo tàng Lịch sử Thành phố Hồ Chí Minh.<br>
+                    - <strong>Hiện nay:</strong> Bảo tồn, nghiên cứu và trưng bày hàng nghìn hiện vật, từ thời tiền sử và các nền văn hóa cổ đến thời phong kiến và lịch sử cận – hiện đại.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Kiến trúc Đông Dương cổ kính và hiện vật quý về các nền văn hóa Đông Sơn, Óc Eo, Champa cùng các triều đại Việt Nam; cách trưng bày theo giai đoạn giúp tìm hiểu lịch sử qua hàng nghìn năm.<br>
+                    <strong>Giờ mở cửa:</strong> Thứ Ba – Chủ nhật, sáng 8:00–11:30 và chiều 13:00–17:00. Thứ Hai đóng cửa.<br>
+                    <strong>Giá vé:</strong> 60.000đ/người/lượt từ ngày 1/10/2026. Học sinh, sinh viên được miễn phí từ ngày 1/10/2026.
+                `
+            },
+            {
+                id: 5,
+                title: "Bảo tàng Mỹ thuật Thành phố Hồ Chí Minh",
+                category: "Di tích lịch sử",
+                lat: 10.7688,
+                lng: 106.6998,
+                address: "97A Phó Đức Chính, Phường Bến Thành, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzkl5LosNaSslO0V3UQgI1Am1sM9u1rCkyLjJbjC2N4g&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRaHbgWTiNLvC1hS1XwjIt1wzNhZO-IJBuNoiI4DjsRHQ&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử & Kiến trúc:</strong><br>
+                    Công trình được xây dựng vào đầu thế kỷ XX và hoàn thành khoảng năm 1929–1934. Ban đầu đây là dinh thự của gia đình Hui Bon Hoa (Chú Hỏa), thương gia nổi tiếng ở Sài Gòn. Kiến trúc kết hợp phong cách châu Âu và yếu tố Á Đông, thể hiện qua mái ngói, cửa sổ và họa tiết trang trí; về sau tòa nhà trở thành Bảo tàng Mỹ thuật TP.HCM.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Lưu giữ tranh, tượng, đồ gốm và tác phẩm nghệ thuật cổ của Việt Nam qua nhiều thời kỳ. Các bộ sưu tập phản ánh văn hóa Óc Eo, Chăm Pa và Khmer, mỹ thuật Nam Bộ, cùng tác phẩm của nhiều họa sĩ Việt Nam thế kỷ XX. Bản thân tòa nhà là di sản kiến trúc có giá trị lịch sử của Sài Gòn.
+                `
+            },
+            {
+                id: 6,
+                title: "Bưu điện Trung tâm Sài Gòn",
+                category: "Di tích lịch sử",
+                lat: 10.7798,
+                lng: 106.6990,
+                address: "2 Công trường Công xã Paris, Phường Bến Nghé, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRo2r9h2OsIfQ56ZXAAawEu2NDyHbk6KkRhrwGYmyS5uQ&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJ8SMYae2KIlhlCH1pnZIyM77ul3Icxyek0HOxvndQ5g&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử & Kiến trúc:</strong><br>
+                    Được xây dựng vào cuối thế kỷ XIX và hoàn thành khoảng năm 1891 dưới thời Pháp thuộc. Bưu điện từng giữ vai trò quan trọng trong hệ thống liên lạc của Sài Gòn, đặc biệt là thư tín và điện tín.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Kiến trúc châu Âu với mái vòm lớn, cửa sổ cao và không gian rộng; bên trong còn lưu giữ các bản đồ cổ của Sài Gòn và Nam Bộ. Nằm gần Nhà thờ Đức Bà, tạo thành cụm kiến trúc lịch sử nổi bật ở trung tâm. Bưu điện vẫn hoạt động và là điểm tham quan nổi tiếng, phản ánh quá trình phát triển đô thị và thông tin liên lạc của Sài Gòn.
+                `
+            },
+            {
+                id: 7,
+                title: "Trường THPT Lê Quý Đôn",
+                category: "Trường học",
+                lat: 10.7781,
+                lng: 106.6935,
+                address: "110 Nguyễn Thị Minh Khai, Phường Xuân Hòa, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSd4lnfOpgk7K-bHLDJKh5eety8Hm03qdYerY_FEXLPhQ&s=10",
+                    "https://vnn-imgs-f.vgcloud.vn/2020/11/17/14/truong-thpt-le-quy-don-tphcm-dep-nhu-troi-au-giua-long-sai-gon.jpg"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành:</strong><br>
+                    - <strong>1874–1877:</strong> Khởi công năm 1874 và hoàn thành năm 1877 dưới thời Pháp thuộc với tên <em>Collège Indigène</em> (Trung học bản xứ), giảng dạy từ tiểu học đến tú tài theo chương trình Pháp; sau đó đổi tên thành <em>Collège Chasseloup-Laubat</em>.<br>
+                    - <strong>Đầu thế kỷ XX:</strong> Trường phát triển, tiếp nhận thêm học sinh Việt Nam; học sinh Pháp và Việt học tại các khu riêng, theo chương trình và kỳ thi tú tài Pháp.<br>
+                    - <strong>1954:</strong> Đổi tên thành trường <em>Jean Jacques Rousseau</em>.<br>
+                    - <strong>1970:</strong> Được giao cho người Việt quản lý, mang tên <em>Trung tâm Giáo dục Lê Quý Đôn</em>, theo tên nhà bác học và nhà văn hóa Việt Nam.<br>
+                    - <strong>29/8/1977:</strong> UBND TP.HCM ban hành quyết định thành lập Trường THPT Lê Quý Đôn.<br><br>
+                    <strong>Ý nghĩa:</strong> Trải qua hơn 150 năm, trường là một trong những cơ sở giáo dục lâu đời của TP.HCM, gắn liền với nhiều giai đoạn phát triển của Sài Gòn – TP.HCM và có giá trị lịch sử, giáo dục, kiến trúc.
+                `
+            },
+            {
+                id: 8,
+                title: "Trường THPT Nguyễn Thị Minh Khai",
+                category: "Trường học",
+                lat: 10.7795,
+                lng: 106.6890,
+                address: "275 Điện Biên Phủ, Phường Võ Thị Sáu, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQsljN0Ld1LdbMnAnqwrhnIS1wnvWsenkrNejEvP6wtyw&s=10",
+                    "https://vnn-imgs-f.vgcloud.vn/2019/11/18/10/nguyen-thi-minh-khai-ngo-truong-mau-vang-tram-tuoi-giua-long-sai-gon.jpg"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành:</strong><br>
+                    - <strong>1913–1915:</strong> Khởi công ngày 6/11/1913 với tên <em>Collège des Jeunes Filles Indigènes</em> (Trường Trung học cho nữ sinh bản xứ); khánh thành ngày 19/10/1915 và đón khóa đầu tiên. Tà áo dài tím gắn với trường tạo nên tên gọi Trường Nữ sinh Áo Tím.<br>
+                    - <strong>1922:</strong> Toàn quyền Albert Sarraut khánh thành Ban Trung học Nữ Học Đường và đặt phiến đá tên trường.<br>
+                    - <strong>1940–1947:</strong> Cơ sở lần lượt bị quân đội Nhật và Anh chiếm đóng; trường phải di dời, đổi tên thành <em>Collège Gia Long</em> rồi <em>Lycée Gia Long</em>.<br>
+                    - <strong>1950–1953:</strong> Chương trình tiếng Việt dần thay thế tiếng Pháp; trường mang tên Trường Nữ Trung học Gia Long.<br>
+                    - <strong>1975:</strong> Đổi tên thành Trường Phổ thông cấp 2–3 Nguyễn Thị Minh Khai.<br>
+                    - <strong>1978–1979 đến nay:</strong> Chuyển sang mô hình giáo dục chung nam và nữ, mang tên Trường THPT Nguyễn Thị Minh Khai. Trường kỷ niệm 110 năm thành lập vào tháng 11/2023.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Kiến trúc Pháp cổ kính, mái ngói đỏ, tường vàng, hành lang và cửa sổ cổ cùng không gian xanh.<br>
+                    <strong>Giờ làm việc:</strong> Thứ Hai–Thứ Sáu; văn phòng/thư viện: 07:30–11:30 và 13:30–16:30.
+                `
+            },
+            {
+                id: 9,
+                title: "Cơm tấm Gấu Beo",
+                category: "Quán ăn",
+                lat: 10.8032982,
+                lng: 106.7132606,
+                address: "441/66 Điện Biên Phủ, Thạnh Mỹ Tây, TP. HCM",
+                images: [
+                    "https://lh3.googleusercontent.com/grass-cs/AABkmLfnOPEnGFvi7I_8b4aLCKZ3T5oMLVgqlBx1rxCcKUtq52URxNtksOxV9MQmP7XoO4FRctT9aDCuYsutqNOiSPUHCY-i76xh7uXrDdMCmHsgSf_-fJ62rHqoA8kkQlUPPUu8uZllV-g1IHrN=w800",
+                    "https://lh3.googleusercontent.com/grass-cs/AABkmLdwYzF1-4-i-ZLG2dGRlKC4jk7DkAH9DYzel0UmgxDgiUaV76jI7Jzofwkqdvak7e3bfyeWNxM7hnM4PTm3Hg4QeW-7AOjWPDhlGtoFs9T3g5z56AiiaAfk-X7rzHQ1oi-YtWX2cqoJCPIA=w800"
+                ],
+                desc: `
+                    <strong>Thông tin quán ăn:</strong><br>
+                    - <strong>Địa chỉ:</strong> 441/66 Điện Biên Phủ, Thạnh Mỹ Tây, TP. HCM.<br>
+                    - <strong>Giờ mở cửa:</strong> 10:00 – 22:00 hàng ngày.<br>
+                    - <strong>Đặc điểm nổi bật:</strong> Thịt mềm đậm đà, có tóp mỡ giòn rụm hấp dẫn, đặc biệt <strong>miễn phí cơm thêm và canh</strong> cho thực khách.<br><br>
+                    Điểm dừng chân ẩm thực quen thuộc được nhiều học sinh, sinh viên và người dân yêu thích khi dạo quanh trục đường Điện Biên Phủ.
+                `
+            },
+            {
+                id: 10,
+                title: "Bến Nhà Rồng – Bảo tàng Hồ Chí Minh",
+                category: "Di tích lịch sử",
+                lat: 10.7685,
+                lng: 106.7065,
+                address: "1 Nguyễn Tất Thành, Phường Xóm Chiếu, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMPCXJzHQnEpXbr6F4xSNITKGtFSt7GjKF7vIko1NnCA&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcBYf3az7R-temAnUrrlwvyXM3_M_fgZkpzfMUBqVYHg&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử:</strong><br>
+                    Bến Nhà Rồng được xây dựng năm 1863 bên sông Sài Gòn, ban đầu là trụ sở Công ty vận tải biển Pháp và giữ vai trò quan trọng trong hoạt động giao thương của thành phố.<br><br>
+                    <strong>Sự kiện lịch sử:</strong><br>
+                    Ngày 5/6/1911, Nguyễn Tất Thành rời bến trên tàu <em>Amiral Latouche-Tréville</em>, bắt đầu hành trình ra nước ngoài tìm đường cứu nước; đây là sự kiện quan trọng trong lịch sử Việt Nam đầu thế kỷ XX.<br><br>
+                    <strong>Hiện nay:</strong><br>
+                    Nơi đây là Bảo tàng Hồ Chí Minh – Chi nhánh TP.HCM, trưng bày hình ảnh, hiện vật và tài liệu về cuộc đời, hoạt động cách mạng và hành trình tìm đường cứu nước của Chủ tịch Hồ Chí Minh.<br><br>
+                    <strong>Điểm đặc sắc:</strong> Công trình ven sông với hình ảnh hai con rồng trên nóc, tạo nên tên gọi “Nhà Rồng”. Đây là một trong những địa điểm lịch sử tiêu biểu của TP.HCM.
+                `
+            },
+            {
+                id: 11,
+                title: "Chùa Xá Lợi",
+                category: "Di tích lịch sử",
+                lat: 10.7780334,
+                lng: 106.6864615,
+                address: "89 Bà Huyện Thanh Quan, Phường Xuân Hòa, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvhz_muCkQDk8WIzL_TEAbvEjq0gZORk8I3dYjHvm9dg&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDiAo6VKb0pObcVcZyBYM1eYhVksUc9i1jrCy4wtJhTA&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành và ý nghĩa:</strong><br>
+                    Chùa Xá Lợi được Hội Phật học Nam Việt khởi công xây dựng ngày 5/8/1956, với mục đích tôn thờ xá lợi Phật và làm hội quán cho tổ chức Phật học. Công trình được khánh thành vào tháng 5/1958; thiết kế do các kiến trúc sư Trần Văn Đường và Đỗ Bá Vinh thực hiện, kết hợp không gian thờ tự truyền thống với hình thức kiến trúc hiện đại. Tên chùa gắn với việc cung thỉnh xá lợi Phật từ Sri Lanka về Việt Nam.<br><br>
+                    Trong năm 1963, chùa trở thành một trung tâm quan trọng của phong trào đấu tranh Phật giáo phản đối chính sách kỳ thị tôn giáo dưới chính quyền Ngô Đình Diệm. Cuộc bố ráp chùa Xá Lợi vào đêm 20 rạng sáng 21/8/1963, cùng việc bắt giữ nhiều tăng ni và Phật tử, đã gây chấn động dư luận trong và ngoài nước. Tháp chuông bảy tầng, cao khoảng 32 mét, được hoàn thành sau đó và trở thành dấu mốc nổi bật của khuôn viên. Ngày nay, chùa tiếp tục là nơi sinh hoạt Phật giáo đồng thời lưu giữ dấu ấn kiến trúc và lịch sử đô thị Sài Gòn.
+                `
+            },
+            {
+                id: 12,
+                title: "Chùa Vĩnh Nghiêm",
+                category: "Di tích lịch sử",
+                lat: 10.79039,
+                lng: 106.6822801,
+                address: "339 Nam Kỳ Khởi Nghĩa, Phường Xuân Hòa, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLg9lWxCGQtfpAZxl1Cu3x5waNTUC7tZGNDJ8IsWX8KA&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNQOOqVihgsEdSTUk8L_pjPQOLbl6MtLvxJ5T5q6Lk_A&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành và kiến trúc:</strong><br>
+                    Chùa Vĩnh Nghiêm tại Sài Gòn được xây dựng từ năm 1964, do hai hòa thượng Thích Tâm Giác và Thích Thanh Kiểm khởi xướng. Hai vị muốn tạo dựng một trung tâm Phật giáo ở miền Nam dựa trên hình mẫu chùa Vĩnh Nghiêm cổ tại Bắc Giang, nơi gắn với lịch sử Thiền phái Trúc Lâm. Công trình được xây trên nền đất thấp; việc san lấp và gia cố mặt bằng quy mô lớn là một phần đáng kể của quá trình thi công. Các kiến trúc sư Nguyễn Bá Lăng, Lê Tấn Chuyên và Cổ Văn Hậu tham gia thiết kế, vận dụng vật liệu và kỹ thuật xây dựng hiện đại nhưng vẫn gợi lại hình dáng mái, tháp và bố cục của chùa truyền thống miền Bắc. Những hạng mục chính cơ bản hoàn thành vào năm 1971.<br><br>
+                    Chùa nổi bật với tam quan, chính điện nhiều tầng, tháp đá và các công trình phụ trợ trong khuôn viên rộng. Qua nhiều thập niên, nơi đây vừa là cơ sở tu học, lễ bái và sinh hoạt cộng đồng Phật tử, vừa trở thành một dấu mốc kiến trúc tôn giáo tiêu biểu của thành phố. Tên gọi Vĩnh Nghiêm thể hiện sự tiếp nối với ngôi chùa cổ cùng tên và truyền thống Phật giáo Việt Nam.
+                `
+            },
+            {
+                id: 13,
+                title: "Bệnh viện Mắt TP. Hồ Chí Minh",
+                category: "Di tích lịch sử",
+                lat: 10.7786295,
+                lng: 106.6850681,
+                address: "280 Điện Biên Phủ, Phường Xuân Hòa, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoMVpZQeWwvLhQCAOiX0JPjhuWsdqBDSUvBQuy0Tffhg&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKphtQVFaXJG6-KoxjEB8yurtvNtwlQXZl060PSz__iQ&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành và giá trị kiến trúc:</strong><br>
+                    Bệnh viện Mắt TP. Hồ Chí Minh là một công trình y tế lâu đời trên đường Điện Biên Phủ. Tòa nhà được xây dựng dưới thời Pháp thuộc; bệnh viện khánh thành ngày 19/12/1938 và ban đầu phục vụ công tác khám, điều trị chuyên khoa mắt tại Sài Gòn. Qua nhiều giai đoạn, cơ sở tiếp tục đảm nhiệm chức năng y tế, đồng thời được mở rộng để đáp ứng nhu cầu chăm sóc mắt ngày càng tăng của người dân thành phố và các tỉnh phía Nam. Công trình có dấu ấn kiến trúc Pháp, thể hiện qua hình khối, mặt đứng và cách tổ chức không gian của một cơ sở y tế đô thị đầu thế kỷ XX.<br><br>
+                    Tháng 9/2023, UBND TP. Hồ Chí Minh xếp hạng công trình là di tích kiến trúc nghệ thuật cấp thành phố. Việc xếp hạng ghi nhận giá trị lịch sử và kiến trúc của tòa nhà, bên cạnh vai trò chuyên môn liên tục của bệnh viện. Đây là một điểm dừng nằm trực tiếp trên đường Điện Biên Phủ, gắn với lịch sử phát triển của y tế đô thị Sài Gòn.
+                `
+            },
+            {
+                id: 14,
+                title: "Hầm vũ khí Biệt động Sài Gòn",
+                category: "Di tích lịch sử",
+                lat: 10.7721658,
+                lng: 106.6859349,
+                address: "287/70 Nguyễn Đình Chiểu, Phường Xuân Hòa, TP. Hồ Chí Minh",
+                images: [
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT88PFuLVzjwWYQQIz9w9vJj9xnULWM2aUOd4okVgsp1A&s=10",
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPxaB86zh_0XIrN3Ztmf7cVR-7tcd_QSPhpk7TEWH_TQ&s=10"
+                ],
+                desc: `
+                    <strong>Lịch sử hình thành và hoạt động:</strong><br>
+                    Căn nhà số 287/70 Nguyễn Đình Chiểu là cơ sở bí mật của lực lượng Biệt động Sài Gòn do ông Trần Văn Lai, bí danh Mai Hồng Quế, làm chủ. Theo lời kể của gia đình, ông Lai được giao mua nhà gần Dinh Độc Lập để làm nơi cất giấu vũ khí. Vợ chồng ông đào căn hầm trong gần một năm, chủ yếu vào ban đêm để giữ bí mật; đến cuối năm 1967, vũ khí bắt đầu được chuyển vào trong bằng xe của ông Lai, khi đó hoạt động dưới vỏ bọc nhà thầu khoán tại Dinh Độc Lập.<br><br>
+                    Căn hầm dài khoảng 8 mét, rộng 2 mét, sâu 2,5 mét, từng chứa hơn 2 tấn vũ khí như lựu đạn, thuốc nổ, súng AK và B40 để chuẩn bị cho cuộc tiến công Dinh Độc Lập dịp Tết Mậu Thân năm 1968. Sau ngày thống nhất, gia đình phục dựng căn nhà và sưu tầm hiện vật, tư liệu về Biệt động Sài Gòn để giới thiệu với công chúng. Di tích hiện lưu giữ câu chuyện về hoạt động bí mật, sự gan dạ của lực lượng Biệt động và mạng lưới cơ sở trong nội đô.
+                `
+            }
+        ];
+
+        const locationTranslations = {
+            1: {
+                title: "Van Thanh Tourist Area",
+                category: "Tourist attraction",
+                address: "48/10 Dien Bien Phu Street, Thanh My Tay Ward, Ho Chi Minh City, Vietnam",
+                desc: `
+                    <strong>History and development:</strong><br>
+                    <strong>1. Before 1985 – The origin of the name Van Thanh:</strong> The name is associated with a shrine dedicated to Duke of Zhou and Confucius, built around 1824 during the administration of Le Van Duyet, Governor of Gia Dinh. The shrine later fell into disrepair, but the name Van Thanh remained associated with the surrounding area, canal, and nearby bridge.<br><br>
+                    <strong>2. 1985 – The tourist area is established:</strong> The Binh Thanh District People's Committee established Van Thanh Tourist Area as a recreation destination. Initially, it covered about 7.7 hectares and included a lake, lawns, sports fields, and recreational facilities.<br><br>
+                    <strong>3. 1998–2003 – Investment and renovation:</strong> In 1998, the area was transferred to Gia Dinh Tourism Company. The grounds were renovated, and additional recreation, dining, and tourism services were developed.<br><br>
+                    <strong>4. 2003–2007 – Part of the Binh Quoi tourism system:</strong> In 2003, Van Thanh became part of Binh Quoi Tourism Village, with continued investment and improvements to visitor services.<br><br>
+                    <strong>5. 2007 to present – An eco-tourism and dining destination:</strong> Ongoing improvements have made Van Thanh a green retreat within the city. It now covers more than 8 hectares, including a lake of about 3.5 hectares, and is part of Saigontourist Group.<br><br>
+                    <strong>Highlights:</strong> Spacious green grounds, a breezy lake, restaurants, a swimming pool, tennis courts, and event venues.<br>
+                    <strong>Opening hours:</strong> 7:00 AM–9:00 PM daily.<br>
+                    <strong>Admission:</strong> Free entry. On-site services (including pool access at approximately VND 30,000–70,000 per person, buffet dining, and cabana rental) are charged separately.
+                `
+            },
+            2: {
+                title: "War Remnants Museum",
+                category: "Historical site",
+                address: "28 Vo Van Tan Street, Vo Thi Sau Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and development:</strong><br>
+                    <strong>1. 1975–1979 – Establishment:</strong> Founded on September 4, 1975, the museum was originally named the Exhibition House for US and Puppet Crimes.<br><br>
+                    <strong>2. 1980–1989 – Expanding the collection:</strong> The museum continued collecting photographs, documents, artifacts, and military equipment from veterans, journalists, and organizations.<br><br>
+                    <strong>3. 1990–1994 – Expanding its work:</strong> Exhibitions grew to document the consequences of war and the human losses it caused.<br><br>
+                    <strong>4. 1995 – Official renaming:</strong> On July 4, 1995, it officially became the War Remnants Museum, with a focus on promoting the value of peace.<br><br>
+                    <strong>5. 2000 to present – Modernization:</strong> Exhibitions have been updated and expanded to cover Agent Orange, prison systems, and the consequences of war.<br><br>
+                    <strong>Highlights:</strong> More than 20,000 documents, artifacts, and photographs about the Vietnam War, including aircraft, tanks, bombs, and weapons. Exhibitions cover Agent Orange, prison systems, and the human consequences of war.<br>
+                    <strong>Opening hours:</strong> 7:30 AM–5:30 PM daily, including public holidays. The ticket counter closes at 5:00 PM.<br>
+                    <strong>Admission:</strong> VND 60,000 for visitors aged 16 and over. Students enter free of charge after registering and presenting a valid student ID.
+                `
+            },
+            3: {
+                title: "Tan Dinh Church",
+                category: "Historical site",
+                address: "289 Hai Ba Trung Street, Xuan Hoa Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>Official name:</strong> Sacred Heart of Jesus Church, Tan Dinh, commonly known as Tan Dinh Church or the Pink Church.<br>
+                    <strong>History and architecture:</strong><br>
+                    - <strong>1874–1876:</strong> Father Donatien Éveillard (1835–1883) established the Tan Dinh parish and supervised construction. The church was inaugurated in December 1876 at a cost of about 15,000 piastres.<br>
+                    - <strong>1877–1880:</strong> He invited the Sisters of Saint Paul of Chartres to establish an orphanage and boarding school; the school had about 300 students by around 1880.<br>
+                    - <strong>1896–1898:</strong> The church was substantially rebuilt and expanded; much of its present appearance dates from this period.<br>
+                    - <strong>1928–1929:</strong> The front bell tower, entrance hall, and other features were added. The tower is about 52.6 meters tall and is topped by a roughly 3-meter bronze cross.<br>
+                    - <strong>1949:</strong> Several columns in the nave and aisles were reinforced.<br>
+                    - <strong>1957:</strong> The church was renovated and painted its distinctive pale pink.<br><br>
+                    <strong>Notable features:</strong> Romanesque architecture blended with Gothic and Renaissance elements; a bell tower with five bells; interior colonnades, stained-glass windows, and an Italian marble main altar. The active Catholic church is an important historic, architectural, religious, and cultural landmark of the city.
+                `
+            },
+            4: {
+                title: "Ho Chi Minh City Museum of History",
+                category: "Historical site",
+                address: "2 Nguyen Binh Khiem Street, Ben Nghe Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and development:</strong><br>
+                    - <strong>1927–1929:</strong> Built within Saigon Zoo and Botanical Gardens to a design by French architect Auguste Delaval, blending Western and East Asian elements in the Indochinese style.<br>
+                    - <strong>January 1, 1929:</strong> Opened as the Blanchard de la Brosse Museum, displaying archaeological, historical, and cultural artifacts from Vietnam and other Asian countries.<br>
+                    - <strong>After 1954:</strong> Continued operating after the Geneva Accords, with exhibitions increasingly focused on Vietnamese history and the Dong Son, Oc Eo, and Champa cultures and Vietnamese dynasties.<br>
+                    - <strong>After 1975:</strong> Taken over and reorganized as the Ho Chi Minh City Museum of History.<br>
+                    - <strong>Today:</strong> Preserves, researches, and exhibits thousands of artifacts, spanning prehistory, ancient cultures, dynastic periods, and modern Vietnamese history.<br><br>
+                    <strong>Highlights:</strong> Historic Indochinese architecture and valuable artifacts from Dong Son, Oc Eo, and Champa cultures and Vietnamese dynasties, presented in chronological exhibits that trace thousands of years of history.<br>
+                    <strong>Opening hours:</strong> Tuesday–Sunday, 8:00–11:30 AM and 1:00–5:00 PM. Closed on Mondays.<br>
+                    <strong>Admission:</strong> VND 60,000 per visit from October 1, 2026. Students enter free of charge from October 1, 2026.
+                `
+            },
+            5: {
+                title: "Ho Chi Minh City Museum of Fine Arts",
+                category: "Historical site",
+                address: "97A Pho Duc Chinh Street, Ben Thanh Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and architecture:</strong><br>
+                    Built in the early 20th century and completed around 1929–1934, the building was originally the residence of the Hui Bon Hoa family, a prominent Saigon merchant family. Its design blends European and East Asian elements, visible in its tiled roofs, windows, and decorative motifs. It was later converted into the Ho Chi Minh City Museum of Fine Arts.<br><br>
+                    <strong>Highlights:</strong> The museum preserves Vietnamese paintings, sculptures, ceramics, and historic artworks from different periods. Its collections include Oc Eo, Cham, and Khmer art, regional southern Vietnamese heritage, and works by 20th-century Vietnamese artists. The building itself is an important historic architectural landmark of Saigon.
+                `
+            },
+            6: {
+                title: "Saigon Central Post Office",
+                category: "Historical site",
+                address: "2 Cong Xa Paris Square, Ben Nghe Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and architecture:</strong><br>
+                    Built in the late 19th century and completed around 1891 during the French colonial period, the post office played a key role in Saigon's communications, especially mail and telegraph services.<br><br>
+                    <strong>Highlights:</strong> European-style architecture with a large vaulted roof, tall windows, and a spacious interior. Historic maps of Saigon and southern Vietnam remain on its walls. Located near Notre-Dame Cathedral Basilica of Saigon, it forms part of a notable historic architectural district in the city center. The post office still operates today and reflects Saigon's urban and communications history.
+                `
+            },
+            7: {
+                title: "Le Quy Don High School",
+                category: "School",
+                address: "110 Nguyen Thi Minh Khai Street, Xuan Hoa Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History:</strong><br>
+                    - <strong>1874–1877:</strong> Built during the French colonial period and initially named <em>Collège Indigène</em>. It taught from primary school through the baccalaureate under the French curriculum, then became <em>Collège Chasseloup-Laubat</em>.<br>
+                    - <strong>Early 20th century:</strong> Enrollment of Vietnamese students increased. French and Vietnamese students studied in separate sections, following the French curriculum and baccalaureate examinations.<br>
+                    - <strong>1954:</strong> Renamed <em>Jean Jacques Rousseau</em> School.<br>
+                    - <strong>1970:</strong> Transferred to Vietnamese management and named the <em>Le Quy Don Education Center</em>, after the renowned Vietnamese scholar and cultural figure.<br>
+                    - <strong>August 29, 1977:</strong> The Ho Chi Minh City People's Committee officially established Le Quy Don High School.<br><br>
+                    <strong>Significance:</strong> With a history of more than 150 years, the school is one of Ho Chi Minh City's oldest educational institutions and preserves important educational, historical, and architectural heritage tied to the city's development.
+                `
+            },
+            8: {
+                title: "Nguyen Thi Minh Khai High School",
+                category: "School",
+                address: "275 Dien Bien Phu Street, Vo Thi Sau Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History:</strong><br>
+                    - <strong>1913–1915:</strong> Construction began on November 6, 1913, as <em>Collège des Jeunes Filles Indigènes</em>. It opened on October 19, 1915, and welcomed its first students. The students' purple ao dai inspired the name Purple-Ao Dai Girls' School.<br>
+                    - <strong>1922:</strong> Governor-General Albert Sarraut inaugurated the girls' secondary division and laid the school's name stone.<br>
+                    - <strong>1940–1947:</strong> The Japanese and then British armies occupied the campus. The school relocated and was renamed <em>Collège Gia Long</em>, then <em>Lycée Gia Long</em>.<br>
+                    - <strong>1950–1953:</strong> Vietnamese gradually replaced French as the language of instruction, and the school became Gia Long Girls' High School.<br>
+                    - <strong>1975:</strong> Renamed Nguyen Thi Minh Khai Lower and Upper Secondary School.<br>
+                    - <strong>1978–1979 to present:</strong> Transitioned to co-educational instruction and became Nguyen Thi Minh Khai High School. It celebrated its 110th anniversary in November 2023.<br><br>
+                    <strong>Highlights:</strong> Historic French architecture, red roof tiles, yellow walls, old-style corridors and windows, and green grounds.<br>
+                    <strong>Opening hours:</strong> Monday–Friday; office/library hours are 7:30–11:30 AM and 1:30–4:30 PM.
+                `
+            },
+            9: {
+                title: "Gau Beo Broken Rice",
+                category: "Eatery",
+                address: "441/66 Dien Bien Phu Street, Thanh My Tay Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>Restaurant information:</strong><br>
+                    - <strong>Address:</strong> 441/66 Dien Bien Phu Street, Thanh My Tay Ward, Ho Chi Minh City.<br>
+                    - <strong>Opening hours:</strong> 10:00 AM–10:00 PM daily.<br>
+                    - <strong>Specialties:</strong> Tender, flavorful grilled pork and crispy pork fat; complimentary rice refills and soup are provided.<br><br>
+                    A popular local food stop enjoyed by students and residents exploring Dien Bien Phu Street.
+                `
+            },
+            10: {
+                title: "Nha Rong Wharf – Ho Chi Minh Museum",
+                category: "Historical site",
+                address: "1 Nguyen Tat Thanh Street, Xom Chieu Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History:</strong><br>
+                    Built in 1863 on the Saigon River, Nha Rong Wharf originally served as the headquarters of a French maritime transport company and played an important role in the city's trade.<br><br>
+                    <strong>Historic event:</strong><br>
+                    On June 5, 1911, Nguyen Tat Thanh departed from the wharf aboard the <em>Amiral Latouche-Tréville</em>, beginning his journey abroad to seek a path to national independence. This was a significant event in early 20th-century Vietnamese history.<br><br>
+                    <strong>Today:</strong><br>
+                    The site is now the Ho Chi Minh Museum – Ho Chi Minh City Branch. Its exhibits include photographs, artifacts, and documents about President Ho Chi Minh's life, revolutionary activities, and journey to seek national independence.<br><br>
+                    <strong>Highlights:</strong> The riverside building's two dragon figures on its roof inspired the name “Nha Rong” (Dragon House). It is one of Ho Chi Minh City's representative historic landmarks.
+                `
+            },
+            11: {
+                title: "Xa Loi Pagoda",
+                category: "Historical site",
+                address: "89 Ba Huyen Thanh Quan Street, Xuan Hoa Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and significance:</strong><br>
+                    Xa Loi Pagoda was begun on August 5, 1956, by the South Vietnam Buddhist Association to enshrine a Buddha relic and serve as the association's headquarters. It was inaugurated in May 1958. Architects Tran Van Duong and Do Ba Vinh designed a complex that combined a modern architectural form with spaces for traditional Buddhist worship. The pagoda's name reflects the enshrinement of a Buddha relic brought from Sri Lanka to Vietnam.<br><br>
+                    In 1963, the pagoda became a major center of the Buddhist movement opposing religious discrimination under the Ngo Dinh Diem government. A raid on the pagoda on the night of August 20–21, 1963, and the arrests of monks, nuns, and Buddhists drew strong attention at home and abroad. Its seven-storey bell tower, approximately 32 meters high, was completed later and became a prominent landmark within the grounds. Today, the pagoda remains an active Buddhist center and preserves an important part of Saigon's architectural and urban history.
+                `
+            },
+            12: {
+                title: "Vinh Nghiem Pagoda",
+                category: "Historical site",
+                address: "339 Nam Ky Khoi Nghia Street, Xuan Hoa Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and architecture:</strong><br>
+                    Vinh Nghiem Pagoda in Saigon began construction in 1964 at the initiative of two monks, Thich Tam Giac and Thich Thanh Kiem. They envisioned a Buddhist center in the South inspired by the ancient Vinh Nghiem Pagoda in Bac Giang, a site associated with the history of the Truc Lam Zen tradition. The project occupied low-lying land, so raising and stabilizing the site formed a substantial part of the construction work. Architects Nguyen Ba Lang, Le Tan Chuyen, and Co Van Hau contributed to the design, using modern materials and building techniques while recalling the roofs, towers, and layout of traditional northern Vietnamese pagodas. The principal structures were largely completed in 1971.<br><br>
+                    The complex is recognized for its gateway, multi-level main hall, stone tower, and supporting buildings. For decades it has served as a place for Buddhist study, worship, and community gatherings, while also becoming a notable example of religious architecture in the city. Its name connects the Saigon pagoda with the older temple of the same name and with Vietnam's Buddhist heritage.
+                `
+            },
+            13: {
+                title: "Ho Chi Minh City Eye Hospital",
+                category: "Historical site",
+                address: "280 Dien Bien Phu Street, Xuan Hoa Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and architectural significance:</strong><br>
+                    Ho Chi Minh City Eye Hospital is a long-established medical institution on Dien Bien Phu Street. Its building was constructed during the French colonial period, and the hospital was inaugurated on December 19, 1938, initially providing specialist eye care in Saigon. Over the decades, it has continued its medical work and expanded to serve the growing eye-care needs of residents in the city and southern provinces. The building bears French architectural characteristics in its massing, facade, and layout, reflecting an urban medical facility from the early 20th century.<br><br>
+                    In September 2023, the Ho Chi Minh City People's Committee designated the building a city-level architectural and artistic heritage site. The recognition acknowledges its architectural and historical value alongside the hospital's continuing clinical role. Located directly on Dien Bien Phu Street, it offers a glimpse into the development of urban healthcare in Saigon.
+                `
+            },
+            14: {
+                title: "Saigon Commando Weapons Bunker",
+                category: "Historical site",
+                address: "287/70 Nguyen Dinh Chieu Street, Xuan Hoa Ward, Ho Chi Minh City",
+                desc: `
+                    <strong>History and operation:</strong><br>
+                    The house at 287/70 Nguyen Dinh Chieu served as a secret base for the Saigon Commandos and was owned by Tran Van Lai, whose alias was Mai Hong Que. According to his family's account, Lai was assigned to buy a house near the Independence Palace to conceal weapons. He and his wife spent nearly a year digging the bunker, mainly at night to maintain secrecy. Weapons began arriving in late 1967, transported in Lai's vehicle while he worked under the cover of a contractor at the Palace.<br><br>
+                    The bunker is approximately 8 meters long, 2 meters wide, and 2.5 meters deep. It once held more than two tonnes of weapons, including grenades, explosives, AK rifles, and B40 launchers, in preparation for the Tet Offensive attack on the Independence Palace in 1968. After reunification, the family restored the house and collected artifacts and documents about the Saigon Commandos for public display. The site preserves the story of clandestine operations, the courage of the commandos, and their network inside the city.
+                `
+            }
+        };
+
+        const locationSources = {
+            1: [
+                { label: "Giải mã địa danh Văn Thánh ở đất Sài Gòn xưa – VTC News", url: "https://vtcnews.vn/giai-ma-dia-danh-van-thanh-o-dat-sai-gon-xua-ar255658.html" },
+                { label: "Saigontourist Group – Khu du lịch Văn Thánh", url: "https://www.saigontourist.net/" }
+            ],
+            2: [
+                { label: "Bảo tàng Chứng tích Chiến tranh – Trang chính thức", url: "https://baotangchungtichchientranh.vn/" },
+                { label: "Vietnam Tourism – Cổng thông tin du lịch quốc gia", url: "https://vietnam.travel/" }
+            ],
+            3: [
+                { label: "Nhà thờ hơn 100 năm ở Sài Gòn hút khách nhờ màu hồng – VnExpress", url: "https://vnexpress.net/nha-tho-hon-100-nam-o-sai-gon-hut-khach-nho-mau-hong-3676620.html" },
+                { label: "Các bài viết về Nhà thờ Tân Định – VnExpress", url: "https://vnexpress.net/tag/nha-tho-tan-dinh-409472" }
+            ],
+            4: [
+                { label: "Bảo tàng Lịch sử TP. Hồ Chí Minh – Trang chính thức", url: "https://baotanglichsutphcm.com.vn/" },
+                { label: "Cổng thông tin Thành phố Hồ Chí Minh", url: "https://hochiminhcity.gov.vn/" }
+            ],
+            5: [
+                { label: "Ngắm kiến trúc Sài Gòn xưa qua Bảo tàng Mỹ thuật – Tuổi Trẻ", url: "https://tuoitre.vn/phunuonline/ngam-kien-truc-sai-gon-xua-qua-bao-tang-my-thuat-11098814.htm" },
+                { label: "Cổng thông tin Thành phố Hồ Chí Minh", url: "https://hochiminhcity.gov.vn/" }
+            ],
+            6: [
+                { label: "Bưu điện hơn 130 tuổi ở Sài Gòn – VnExpress", url: "https://vnexpress.net/buu-dien-hon-130-tuoi-o-sai-gon-4617139.html" },
+                { label: "Vietnam Tourism – Cổng thông tin du lịch quốc gia", url: "https://vietnam.travel/" }
+            ],
+            7: [
+                { label: "Lịch sử truyền thống – Trường THPT Lê Quý Đôn", url: "https://www.thpt-lequydon-hcm.edu.vn/gioi-thieu/15/Lich-Su-Truyen-Thong-History-Of-Le-Quy-Don-High-School.html" },
+                { label: "Trường THPT Lê Quý Đôn – Trang chính thức", url: "https://www.thpt-lequydon-hcm.edu.vn/" }
+            ],
+            8: [
+                { label: "Lịch sử – Trường THPT Nguyễn Thị Minh Khai", url: "https://thptnguyenthiminhkhai.hcm.edu.vn/lich-su/cmb/35064" },
+                { label: "Trường THPT Nguyễn Thị Minh Khai – Trang chính thức", url: "https://thptnguyenthiminhkhai.hcm.edu.vn/" }
+            ],
+            9: [
+                { label: "Cơm tấm Gấu Beo – GrabFood", url: "https://food.grab.com/vn/vi/restaurant/c%C6%A1m-t%E1%BA%A5m-g%E1%BA%A5u-beo-delivery/5-C3LBNXTKCAXBCA" },
+                { label: "Vietnam Tourism – Cổng thông tin du lịch quốc gia", url: "https://vietnam.travel/" }
+            ],
+            10: [
+                { label: "Bến Nhà Rồng – Cổng thông tin Thành phố Hồ Chí Minh", url: "https://hochiminhcity.gov.vn/vi/web/hcm/w/b%E1%BA%BFn-nh%C3%A0-r%E1%BB%93ng-n%C6%A1i-in-d%E1%BA%A5u-ch%C3%A2n-b%C3%A1c-1" },
+                { label: "Bảo tàng Hồ Chí Minh – Trang chính thức", url: "https://baotanghochiminh.vn/" }
+            ],
+            11: [
+                { label: "Chùa Phật học Xá Lợi – Trang chính thức", url: "https://chuaxaloi.vn/" },
+                { label: "Giác Ngộ Online – Báo Giác Ngộ", url: "https://giacngo.vn/" }
+            ],
+            12: [
+                { label: "Chùa Vĩnh Nghiêm Sài Gòn – VinWonders", url: "https://vinwonders.com/vi/wonderpedia/news/chua-vinh-nghiem-sai-gon/" },
+                { label: "Giác Ngộ Online – Báo Giác Ngộ", url: "https://giacngo.vn/" }
+            ],
+            13: [
+                { label: "Nhà thiếu nhi và Bệnh viện mắt TP HCM được xếp hạng di tích – VnExpress", url: "https://vnexpress.net/nha-thieu-nhi-va-benh-vien-mat-tp-hcm-duoc-xep-hang-di-tich-4658686.html" },
+                { label: "Cổng thông tin Thành phố Hồ Chí Minh", url: "https://hochiminhcity.gov.vn/" }
+            ],
+            14: [
+                { label: "Hầm ngầm vũ khí – Chứng tích Biệt động Sài Gòn – VietnamPlus", url: "https://www.vietnamplus.vn/ham-ngam-vu-khi-chung-tich-dam-dau-an-kien-cuong-qua-cam-cua-biet-dong-sai-gon-post1034924.vnp" },
+                { label: "Vietnam News – Báo Việt Nam", url: "https://vietnamnews.vn/" }
+            ]
+        };
+
+        function getLocationText(loc, field) {
+            const translatedLocation = locationTranslations[loc.id];
+            const text = currentLang === 'en' && translatedLocation ? translatedLocation[field] : loc[field];
+            if (field !== 'desc') return text;
+
+            const sourceLabel = currentLang === 'en' ? 'Sources:' : 'Nguồn tham khảo:';
+            const sources = locationSources[loc.id];
+            const sourceLinks = sources.map(source =>
+                `<a href="${source.url}" target="_blank" rel="noopener noreferrer" class="text-blue-700 underline hover:text-blue-900">${source.label}</a>`
+            ).join(' · ');
+            return `${text}<div class="mt-3 border-t border-gray-200 pt-2 text-[10px] leading-relaxed text-gray-500"><strong>${sourceLabel}</strong> ${sourceLinks}</div>`;
+        }
+
+        // Tuyến đường Điện Biên Phủ (Vẽ đường Polyline trên bản đồ)
+        const dienBienPhuPath = [
+            [10.767880, 106.674518],
+            [10.769552, 106.675766],
+            [10.771475, 106.677544],
+            [10.776693, 106.683657],
+            [10.783453, 106.690783],
+            [10.789852, 106.697073],
+            [10.791991, 106.699090],
+            [10.792273, 106.699703],
+            [10.792734, 106.700020],
+            [10.794514, 106.701664],
+            [10.794567, 106.701858],
+            [10.794716, 106.702034],
+            [10.798407, 106.705553],
+            [10.799414, 106.706646],
+            [10.800404, 106.708218],
+            [10.800919, 106.709553],
+            [10.801040, 106.709670],
+            [10.801279, 106.711126],
+            [10.801186, 106.711375],
+            [10.801300, 106.711558],
+            [10.801300, 106.712920],
+            [10.801158, 106.713904],
+            [10.800654, 106.715520],
+            [10.799653, 106.717653],
+            [10.799720, 106.717769],
+            [10.799803, 106.717735],
+            [10.800601, 106.716034],
+            [10.801440, 106.713510]
+        ];
+
+        const GOOGLE_MAP_URL = 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+        const GOOGLE_MAP_SUBDOMAINS = ['mt0', 'mt1', 'mt2', 'mt3'];
+
+        let homeMap, detailMap, detailRouteLine;
+        let hasFittedDetailRoute = false;
+        let homeMarkers = {}, detailMarkers = {};
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initHomeMap();
+            initDetailMap();
+            renderHomeLocationList();
+            renderDetailLocationList(locationsData);
+        });
+
+        // 1. Bản đồ Trang Chủ nền Google Maps
+        function initHomeMap() {
+            homeMap = L.map('home-map').setView([10.7820, 106.6940], 14);
+
+            L.tileLayer(GOOGLE_MAP_URL, {
+                maxZoom: 20,
+                subdomains: GOOGLE_MAP_SUBDOMAINS,
+                attribution: 'Map data © Google | Route geometry © OpenStreetMap contributors'
+            }).addTo(homeMap);
+
+            const routeLine = L.polyline(dienBienPhuPath, { color: '#ea4335', weight: 6, opacity: 0.9 }).addTo(homeMap);
+            homeMap.fitBounds(routeLine.getBounds(), { padding: [16, 16] });
+
+            locationsData.forEach(loc => {
+                const popupHTML = `
+                    <div class="custom-map-popup" style="width:160px;">
+                        <strong style="color:#1a73e8; font-size:13px;">${getLocationText(loc, 'title')}</strong>
+                        <img src="${loc.images[0]}" alt="${getLocationText(loc, 'title')}">
+                        <p style="font-size:11px; color:#5f6368; margin-top:4px;">${getLocationText(loc, 'address')}</p>
+                    </div>
+                `;
+                const marker = L.marker([loc.lat, loc.lng]).addTo(homeMap).bindPopup(popupHTML);
+                homeMarkers[loc.id] = marker;
+            });
+        }
+
+        // 2. Bản đồ Chi tiết nền Google Maps
+        function initDetailMap() {
+            detailMap = L.map('detail-map').setView([10.7820, 106.6940], 14);
+
+            L.tileLayer(GOOGLE_MAP_URL, {
+                maxZoom: 20,
+                subdomains: GOOGLE_MAP_SUBDOMAINS,
+                attribution: 'Map data © Google | Route geometry © OpenStreetMap contributors'
+            }).addTo(detailMap);
+
+            detailRouteLine = L.polyline(dienBienPhuPath, { color: '#ea4335', weight: 6, opacity: 0.9 }).addTo(detailMap);
+
+            renderDetailMarkers(locationsData);
+        }
+
+        function createDetailPopupContent(loc) {
+            return `
+                <div class="custom-map-popup" style="width: 200px;">
+                    <span style="font-size:10px; background:#1a73e8; color:#fff; padding:2px 6px; border-radius:10px;">${getLocationText(loc, 'category')}</span>
+                    <h4 style="margin:4px 0 2px 0; font-size:14px; font-weight:bold; color:#202124;">${getLocationText(loc, 'title')}</h4>
+                    <img src="${loc.images[0]}" alt="${getLocationText(loc, 'title')}">
+                    <p style="font-size:11px; margin:5px 0 0 0; color:#5f6368;">${getLocationText(loc, 'address')}</p>
+                </div>
+            `;
+        }
+
+        function renderDetailMarkers(data) {
+            Object.values(detailMarkers).forEach(m => detailMap.removeLayer(m));
+            detailMarkers = {};
+
+            data.forEach(loc => {
+                const marker = L.marker([loc.lat, loc.lng]).addTo(detailMap).bindPopup(createDetailPopupContent(loc));
+                marker.on('click', () => openDrawerWithData(loc));
+                detailMarkers[loc.id] = marker;
+            });
+        }
+
+        function renderHomeLocationList() {
+            const container = document.getElementById('home-location-selector');
+            container.innerHTML = '';
+
+            locationsData.forEach(loc => {
+                const btn = document.createElement('div');
+                btn.className = "p-2 rounded-xl border border-saigon-200 hover:bg-saigon-100 cursor-pointer transition flex items-center justify-between group";
+                btn.innerHTML = `
+                    <div class="flex items-center space-x-2 truncate">
+                        <span class="w-2 h-2 rounded-full bg-red-600 flex-shrink-0"></span>
+                        <span class="text-xs font-semibold text-saigon-900 group-hover:text-amber-800 truncate">${getLocationText(loc, 'title')}</span>
+                    </div>
+                    <span class="text-[10px] text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200 flex-shrink-0 ml-1">${getLocationText(loc, 'category')}</span>
+                `;
+                btn.onclick = () => selectHomeLocation(loc);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectHomeLocation(loc) {
+            selectedHomeLocation = loc;
+            document.getElementById('preview-category').innerText = getLocationText(loc, 'category');
+            document.getElementById('preview-title').innerText = getLocationText(loc, 'title');
+            document.getElementById('preview-addr-text').innerText = getLocationText(loc, 'address');
+            document.getElementById('preview-desc').innerHTML = getLocationText(loc, 'desc');
+
+            homeMap.flyTo([loc.lat, loc.lng], 16, { duration: 1.2 });
+            if (homeMarkers[loc.id]) {
+                homeMarkers[loc.id].openPopup();
+            }
+        }
+
+        function renderDetailLocationList(data) {
+            const container = document.getElementById('location-list');
+            container.innerHTML = '';
+
+            data.forEach(loc => {
+                const card = document.createElement('div');
+                card.className = "p-3 rounded-2xl border border-saigon-200 hover:border-amber-600 hover:shadow-md transition cursor-pointer flex items-center space-x-3 bg-white";
+                card.innerHTML = `
+                    <img src="${loc.images[0]}" class="w-16 h-16 rounded-xl object-cover flex-shrink-0" alt="${getLocationText(loc, 'title')}">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700">${getLocationText(loc, 'category')}</span>
+                        <h4 class="text-sm font-bold text-saigon-900 truncate">${getLocationText(loc, 'title')}</h4>
+                        <p class="text-xs text-gray-500 truncate">${getLocationText(loc, 'address')}</p>
+                    </div>
+                `;
+                card.onclick = () => focusDetailLocation(loc);
+                container.appendChild(card);
+            });
+        }
+
+        function focusDetailLocation(loc) {
+            detailMap.flyTo([loc.lat, loc.lng], 17, { duration: 1.5 });
+            if (detailMarkers[loc.id]) {
+                detailMarkers[loc.id].openPopup();
+            }
+            openDrawerWithData(loc);
+        }
+
+        function jumpToSpot(title) {
+            switchTab('detail');
+            const loc = locationsData.find(item => item.title === title);
+            if (loc) {
+                setTimeout(() => focusDetailLocation(loc), 300);
+            }
+        }
+
+        function filterLocations(category) {
+            activeLocationCategory = category;
+            let filtered = locationsData;
+            if (category !== 'all') {
+                filtered = locationsData.filter(item => item.category === category);
+            }
+            renderDetailLocationList(filtered);
+            renderDetailMarkers(filtered);
+        }
+
+        function openDrawerWithData(loc) {
+            activeDrawerLocation = loc;
+            document.getElementById('drawer-category').innerText = getLocationText(loc, 'category');
+            document.getElementById('drawer-title').innerText = getLocationText(loc, 'title');
+            
+            const drawerBody = document.getElementById('drawer-body');
+            drawerBody.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <img src="${loc.images[0]}" class="w-full h-36 object-cover rounded-xl shadow-md" alt="${getLocationText(loc, 'title')} 1">
+                    <img src="${loc.images[1] || loc.images[0]}" class="w-full h-36 object-cover rounded-xl shadow-md" alt="${getLocationText(loc, 'title')} 2">
+                </div>
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold text-amber-700 uppercase tracking-wider">${translations[currentLang].drawer_address}</h4>
+                    <p class="text-sm text-gray-700 flex items-start">
+                        <svg class="w-4 h-4 mr-2 text-amber-700 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                        ${getLocationText(loc, 'address')}
+                    </p>
+                </div>
+                <div class="space-y-2 border-t border-saigon-200 pt-4">
+                    <h4 class="text-xs font-bold text-amber-700 uppercase tracking-wider">${translations[currentLang].drawer_history}</h4>
+                    <div class="text-sm text-gray-600 leading-relaxed space-y-2">${getLocationText(loc, 'desc')}</div>
+                </div>
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${loc.title}, ${loc.address}`)}" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-3 bg-saigon-800 hover:bg-saigon-900 text-white font-medium rounded-xl shadow transition mt-6">
+                    ${translations[currentLang].drawer_directions}
+                </a>
+            `;
+
+            const drawer = document.getElementById('info-drawer');
+            const drawerContent = document.getElementById('drawer-content');
+            drawer.classList.remove('hidden');
+            setTimeout(() => drawerContent.classList.remove('translate-x-full'), 10);
+        }
+
+        function closeDrawer() {
+            const drawer = document.getElementById('info-drawer');
+            const drawerContent = document.getElementById('drawer-content');
+            drawerContent.classList.add('translate-x-full');
+            setTimeout(() => drawer.classList.add('hidden'), 300);
+            activeDrawerLocation = null;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('text-saigon-800', 'border-b-2', 'border-saigon-800', 'font-semibold');
+                el.classList.add('text-gray-600', 'font-medium');
+            });
+
+            if (tab === 'home') {
+                document.getElementById('tab-home').classList.remove('hidden');
+                document.getElementById('nav-home').classList.add('text-saigon-800', 'border-b-2', 'border-saigon-800', 'font-semibold');
+                setTimeout(() => homeMap.invalidateSize(), 200);
+            } else {
+                document.getElementById('tab-detail').classList.remove('hidden');
+                document.getElementById('nav-detail').classList.add('text-saigon-800', 'border-b-2', 'border-saigon-800', 'font-semibold');
+                setTimeout(() => {
+                    detailMap.invalidateSize();
+                    if (!hasFittedDetailRoute && detailRouteLine) {
+                        detailMap.fitBounds(detailRouteLine.getBounds(), { padding: [32, 32], maxZoom: 14 });
+                        hasFittedDetailRoute = true;
+                    }
+                }, 200);
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        function toggleGlobalLanguage() {
+            const slider = document.getElementById('lang-slider');
+            const labelVi = document.getElementById('label-vi');
+            const labelEn = document.getElementById('label-en');
+
+            if (currentLang === 'vi') {
+                currentLang = 'en';
+                slider.classList.replace('translate-x-0', 'translate-x-12');
+                labelVi.classList.replace('text-white', 'text-gray-700');
+                labelEn.classList.replace('text-gray-700', 'text-white');
+            } else {
+                currentLang = 'vi';
+                slider.classList.replace('translate-x-12', 'translate-x-0');
+                labelVi.classList.replace('text-gray-700', 'text-white');
+                labelEn.classList.replace('text-white', 'text-gray-700');
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.innerHTML = translations[currentLang][key];
+                }
+            });
+
+            document.documentElement.lang = currentLang;
+            renderHomeLocationList();
+
+            const filteredLocations = activeLocationCategory === 'all'
+                ? locationsData
+                : locationsData.filter(item => item.category === activeLocationCategory);
+            renderDetailLocationList(filteredLocations);
+            locationsData.forEach(loc => {
+                const marker = detailMarkers[loc.id];
+                if (marker) {
+                    marker.setPopupContent(createDetailPopupContent(loc));
+                }
+            });
+
+            locationsData.forEach(loc => {
+                const marker = homeMarkers[loc.id];
+                if (marker) {
+                    marker.setPopupContent(`
+                        <div class="custom-map-popup" style="width:160px;">
+                            <strong style="color:#1a73e8; font-size:13px;">${getLocationText(loc, 'title')}</strong>
+                            <img src="${loc.images[0]}" alt="${getLocationText(loc, 'title')}">
+                            <p style="font-size:11px; color:#5f6368; margin-top:4px;">${getLocationText(loc, 'address')}</p>
+                        </div>
+                    `);
+                }
+            });
+
+            if (selectedHomeLocation) {
+                document.getElementById('preview-category').innerText = getLocationText(selectedHomeLocation, 'category');
+                document.getElementById('preview-title').innerText = getLocationText(selectedHomeLocation, 'title');
+                document.getElementById('preview-addr-text').innerText = getLocationText(selectedHomeLocation, 'address');
+                document.getElementById('preview-desc').innerHTML = getLocationText(selectedHomeLocation, 'desc');
+            }
+
+            if (activeDrawerLocation && !document.getElementById('info-drawer').classList.contains('hidden')) {
+                openDrawerWithData(activeDrawerLocation);
+            }
+        }
+    </script> 
+</body> 
+</html>
